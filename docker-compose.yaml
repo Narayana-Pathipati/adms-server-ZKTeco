@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  app:
+    image: php:8.1-apache
+    container_name: adms-server
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: adms
+      DB_USERNAME: admsuser
+      DB_PASSWORD: secret
+    depends_on:
+      - mysql
+    entrypoint: /bin/bash -c "
+      apt-get update && \
+      apt-get install -y git unzip zip libzip-dev libpng-dev libonig-dev libxml2-dev curl && \
+      docker-php-ext-install pdo pdo_mysql zip && \
+      a2enmod rewrite && \
+      curl -sS https://getcomposer.org/installer | php && \
+      php composer.phar install && \
+      php artisan key:generate && \
+      apache2-foreground
+    "
+
+  mysql:
+    image: mysql:5.7
+    container_name: adms-db
+    environment:
+      MYSQL_DATABASE: adms
+      MYSQL_USER: admsuser
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
